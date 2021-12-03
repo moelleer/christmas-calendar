@@ -1,0 +1,9 @@
+.user {
+  display: flex;
+  align-items: center;
+}
+
+.user img {
+  border-radius: 9999px;
+  margin-right: 1rem;
+}

@@ -1,31 +1,27 @@
-import { Action } from "history";
+import { User, Winner } from ".prisma/client";
 import {
   ActionFunction,
   Form,
   json,
-  Link,
+  LinksFunction,
   LoaderFunction,
-  MetaFunction,
   redirect,
   useActionData,
   useLoaderData,
+  useSubmit,
 } from "remix";
 import invariant from "tiny-invariant";
+import winnersStylesUrl from "~/styles/winners.css";
 import { db } from "~/utils/db.server";
 
-type LotteryData = {
-  lottery: Array<{ name: string; date: string }>;
+export let links: LinksFunction = () => {
+  return [{ rel: "stylesheet", href: winnersStylesUrl }];
 };
 
-type ActionData = {
-  winner: string;
-  formError?: string;
-};
+export let loader: LoaderFunction = async () => {
+  let winners = await db.winner.findMany({ include: { user: true } });
 
-export let loader: LoaderFunction = async (): Promise<Response | Action> => {
-  let data = await db.lottery.findMany();
-
-  return json({ lottery: data });
+  return json(winners);
 };
 
 export let action: ActionFunction = async ({ request }) => {
@@ -34,109 +30,96 @@ export let action: ActionFunction = async ({ request }) => {
 
   invariant(typeof date === "string");
 
-  let winnerExists = await db.lottery.findFirst({
-    where: { date: new Date(date) },
+  let count = await db.user.count();
+  let randomRowNumber = Math.floor(Math.random() * count);
+  let [randomUser] = await db.user.findMany({
+    take: 1,
+    skip: randomRowNumber,
   });
 
-  if (winnerExists) {
-    return {
-      formError: "2 vinnare på samma dag, hur skulle det se ut? 🥴😵‍💫",
-    };
-  }
-
-  let teamMembers = [
-    "Andreas",
-    "Jaglyser",
-    "Johan",
-    "Joi",
-    "Magnus",
-    "Marre",
-    "Nina",
-    "Tessan",
-    "Valle",
-    "Widén",
-  ];
-
-  let winner = teamMembers[Math.floor(Math.random() * teamMembers.length)];
-
-  await db.lottery.create({
-    data: {
-      name: winner,
-      date: new Date(date),
-    },
+  await db.winner.create({
+    data: { date: new Date(date), userId: randomUser.id },
   });
 
-  return redirect(`/winners/${date}`);
+  return redirect("/");
 };
 
-// https://remix.run/api/conventions#meta
-export let meta: MetaFunction = () => {
-  return {
-    title: "Team 1 Julkalender",
-    description: "Tjoho vad kul, hoppas du vinner något roligt!",
-  };
-};
+export default function Winners() {
+  const submit = useSubmit();
+  let actionMessage = useActionData<string>();
+  let winners = useLoaderData<Array<Winner & { user: User }>>();
 
-export function ErrorBoundary({ error }: { error: { message: string } }) {
+  let dates = [...Array(24)].map((_, i) => i + 1);
+  let today = new Date().getDate();
+
   return (
-    <div className="remix__page">
-      <main>
-        <h1>{error.message}</h1>
-        <Link to="/">Försök igen!</Link>
-      </main>
+    <Form method="post" onChange={(event) => submit(event?.currentTarget)}>
+      <div className="winners">
+        {dates.map((date, index) => {
+          let dateObj = new Date();
+          dateObj.setDate(date);
+
+          let winner = winners.find((winner) => {
+            let winnerDate = new Date(winner.date);
+
+            return winnerDate.getDate() === dateObj.getDate();
+          });
+
+          if (!winner && today >= date) {
+            return <UnlockDate key={index} date={date} />;
+          }
+          if (!winner) {
+            return <LockedDate key={index} date={date} />;
+          }
+
+          return (
+            <div key={index} className="winner-user">
+              <div className="winner-avatar">
+                <span className="winner-date">{date}</span>
+                <img src={winner.user.avatar} width={128} height={128} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Form>
+  );
+}
+
+function LockedDate({ date }: { date: Number }) {
+  return (
+    <div className="winner-locked">
+      <span className="winner-locked-date">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={32}
+          height={32}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      </span>
     </div>
   );
 }
 
-// https://remix.run/guides/routing#index-routes
-export default function Index() {
-  let data = useLoaderData<LotteryData>();
-  let actionData = useActionData<ActionData>();
-
+function UnlockDate({ date }: { date: Number }) {
   return (
-    <div className="remix__page">
-      <main>
-        <h1>Välkommen till Team 1's julkalender!</h1>
-
-        <h3>Dra dagens vinnare:</h3>
-        <Form method="post">
-          <p>
-            <label htmlFor="date">
-              Välj datum:{" "}
-              <input
-                type="date"
-                name="date"
-                min="2021-12-01"
-                max={new Date().toISOString().slice(0, 10)}
-                defaultValue={new Date().toISOString().slice(0, 10)}
-              />
-            </label>
-          </p>
-
-          <button type="submit" className="button">
-            Ta reda på vem som vinner
-          </button>
-
-          {actionData?.formError ? <p>{actionData.formError}</p> : null}
-        </Form>
-      </main>
-
-      <aside>
-        <h3>Tidigare dragningar:</h3>
-        <ul>
-          {data.lottery.map((lottery) => {
-            let formattedDate = Intl.DateTimeFormat("sv-SE").format(
-              new Date(lottery.date)
-            );
-            return (
-              <li key={lottery.date}>
-                <strong>{formattedDate}: </strong>
-                <Link to={`/winners/${formattedDate}`}>{lottery.name}</Link>
-              </li>
-            );
-          })}
-        </ul>
-      </aside>
-    </div>
+    <label htmlFor={`date-${date}`} className="winner-locked unlock">
+      <input
+        type="radio"
+        id={`date-${date}`}
+        name="date"
+        value={`2021-01-${date < 10 ? `0${date}` : date}`}
+      />
+      <span className="winner-locked-date">{date}</span>
+    </label>
   );
 }

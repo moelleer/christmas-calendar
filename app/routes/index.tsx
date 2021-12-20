@@ -5,17 +5,25 @@ import {
   json,
   LinksFunction,
   LoaderFunction,
-  redirect,
+  MetaFunction,
   useActionData,
   useLoaderData,
   useSubmit,
 } from "remix";
 import invariant from "tiny-invariant";
+import hatSrc from "~/images/hat.svg";
 import winnersStylesUrl from "~/styles/winners.css";
 import { db } from "~/utils/db.server";
 
 export let links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: winnersStylesUrl }];
+};
+
+export let meta: MetaFunction = () => {
+  return {
+    title: "Team 1's julkalender!",
+    description: "Välkommen till julkalendern",
+  };
 };
 
 export let loader: LoaderFunction = async () => {
@@ -37,16 +45,16 @@ export let action: ActionFunction = async ({ request }) => {
     skip: randomRowNumber,
   });
 
-  await db.winner.create({
+  let winner = await db.winner.create({
     data: { date: new Date(date), userId: randomUser.id },
   });
 
-  return redirect("/");
+  return winner;
 };
 
 export default function Winners() {
   const submit = useSubmit();
-  let actionMessage = useActionData<string>();
+  let winnerActionData = useActionData<Winner>();
   let winners = useLoaderData<Array<Winner & { user: User }>>();
 
   let dates = [...Array(24)].map((_, i) => i + 1);
@@ -72,10 +80,46 @@ export default function Winners() {
             return <LockedDate key={index} date={date} />;
           }
 
+          if (winnerActionData?.id === winner.id) {
+            return (
+              <div style={{ position: "relative" }}>
+                <article className="present active">
+                  <div className="present__pane">
+                    <h2 className="present__date">{date}</h2>
+                  </div>
+                  <div className="present__content">
+                    <div className="present__bauble">
+                      <img
+                        className="winner-hat"
+                        src={hatSrc}
+                        width={92}
+                        height={76}
+                      />
+
+                      <img src={winner.user.avatar} width={128} height={128} />
+                    </div>
+                  </div>
+                </article>
+              </div>
+            );
+          }
+
           return (
-            <div key={index} className="winner-user">
+            <div
+              key={index}
+              className={`winner-user${
+                winnerActionData?.id === winner.id ? " winner-animate" : ""
+              } `}
+            >
               <div className="winner-avatar">
                 <span className="winner-date">{date}</span>
+                <img
+                  className="winner-hat"
+                  src={hatSrc}
+                  width={92}
+                  height={76}
+                />
+
                 <img src={winner.user.avatar} width={128} height={128} />
               </div>
             </div>

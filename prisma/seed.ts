@@ -42,13 +42,13 @@ function getUsers() {
     {
       name: "Joi",
       avatar: "https://ca.slack-edge.com/T02FUQ2JT-U03S9E1GA-gdc06f2185b7-128",
-      winnerDates: [],
+      winnerDates: ["2021-12-04", "2021-12-08"],
     },
     {
       name: "Jaglyser",
       avatar:
         "https://ca.slack-edge.com/T02FUQ2JT-U02E43SK285-c9f80babc66c-128",
-      winnerDates: [],
+      winnerDates: ["2021-12-06"],
     },
     {
       name: "Marre",
@@ -65,7 +65,7 @@ function getUsers() {
       name: "Widén",
       avatar:
         "https://ca.slack-edge.com/T02FUQ2JT-U01JA30B9C3-2c54a229e023-128",
-      winnerDates: [],
+      winnerDates: ["2021-12-05"],
     },
     {
       name: "Magnus",
@@ -75,7 +75,7 @@ function getUsers() {
     {
       name: "Andreas",
       avatar: "https://ca.slack-edge.com/T02FUQ2JT-UMESTEGKX-5dd77bf24fc4-128",
-      winnerDates: [],
+      winnerDates: ["2021-12-07"],
     },
   ];
 }

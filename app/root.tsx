@@ -1,3 +1,4 @@
+import Snowfall from "react-snowfall";
 import type { LinksFunction } from "remix";
 import {
   Link,
@@ -110,6 +111,7 @@ function Document({
       </head>
       <body>
         {children}
+        <Snowfall style={{ position: "fixed" }} />
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" && <LiveReload />}
@@ -120,19 +122,21 @@ function Document({
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="remix-app">
-      <header className="remix-app__header">
-        <div className="container remix-app__header-content">
-          <Link to="/" title="Remix" className="remix-app__header-home-link">
-            <Team1Logo />
-          </Link>
-          <h1>Välkommen till Team 1's Julkalender!</h1>
+    <>
+      <div className="remix-app">
+        <header className="remix-app__header">
+          <div className="container remix-app__header-content">
+            <Link to="/" title="Remix" className="remix-app__header-home-link">
+              <Team1Logo />
+            </Link>
+            <h1>Välkommen till Team 1's Julkalender!</h1>
+          </div>
+        </header>
+        <div className="remix-app__main">
+          <div className="container remix-app__main-content">{children}</div>
         </div>
-      </header>
-      <div className="remix-app__main">
-        <div className="container remix-app__main-content">{children}</div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,10 +1,23 @@
 import { User, Winner } from ".prisma/client";
-import { json, LinksFunction, LoaderFunction, useLoaderData } from "remix";
+import {
+  json,
+  LinksFunction,
+  LoaderFunction,
+  MetaFunction,
+  useLoaderData,
+} from "remix";
 import userStylesUrl from "~/styles/user.css";
 import { db } from "~/utils/db.server";
 
 export let links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: userStylesUrl }];
+};
+
+export let meta: MetaFunction = () => {
+  return {
+    title: "Team 1's medlemmar!",
+    description: "Här kan du se alla som är med i Team 1",
+  };
 };
 
 export let loader: LoaderFunction = async () => {
